@@ -1,0 +1,21 @@
+Package: Algorithmique
+Title: Conformal Prediction in High Dimensions
+Version: 0.0.0.9000
+Authors@R: 
+    c(
+        person(given = "Jaad", family = "BELHOUARI", email = "jaad.belhouari@gmail.com", role = "aut"),
+        person(given = "Ayman", family = "MIMOUN", email = "aym.mimoun@gmail.com", role = "aut"),
+        person(given = "Fatima Zahra", family = "HANNOU", email = "fatimzahrahannou@gmail.com", role = c("aut", "cre"))
+    )
+Description: To add.
+License: AGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+LinkingTo: 
+    Rcpp
+Imports:
+    Rcpp
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
