@@ -15,7 +15,11 @@ RoxygenNote: 7.3.2
 LinkingTo: 
     Rcpp
 Imports:
-    Rcpp
+    Rcpp,
+    R6,
+    caret,
+    xgboost,
+    data.table
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
