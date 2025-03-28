@@ -1,4 +1,4 @@
-#' MLReducedModel
+#' MLModel
 #'
 #' R6 class for multi-output regression using either polynomial regression or gradient boosting with bagging (via xgboost).
 #'
@@ -10,12 +10,14 @@
 #' }
 #'
 #' @examples
-#' model <- MLReducedModel$new(X, Y, method = "polynomial")
+#' X <- X_train
+#' Y <- Y_train
+#' model <- MLModel$new(X, Y, method = "polynomial")
 #' model$fit()
 #' Y_pred <- model$predict(X)
 #'
 #' @export
-MLReducedModel <- R6::R6Class("MLReducedModel",
+MLModel <- R6::R6Class("MLModel",
                               public = list(
                                 X = NULL,
                                 Y = NULL,

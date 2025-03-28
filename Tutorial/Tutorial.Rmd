@@ -1,0 +1,162 @@
+---
+title: "Tuto - Beta-Optim"
+author: "Jaad Belhouari"
+date: "2025-03-28"
+output: html_document
+---
+
+## Introduction
+
+In this tutorial, we will guide you through building and training a machine learning model, quantifying uncertainties, and visualizing the results using the **`Algorithmique`** library in R.
+
+We will use the **`xgboost`** model for training, along with methods for uncertainty quantification and coverage estimation. The example follows these steps:
+
+1. Data Loading
+2. Data Splitting
+3. Model Building and Training
+4. Uncertainty Quantification
+5. Visualization of Results
+
+## 1. Data Loading
+
+First, we load the dataset and separate the features and labels.
+
+```{r}
+# Load necessary libraries
+library(Algorithmique)
+library(xgboost)
+library(data.table)
+library(R6)
+```
+
+```{r}
+# Load dataset
+setwd("../")
+df <- fread("data/dataset.csv")
+X <- df[, .(X1, X2)]
+Y <- df[, !c("X1", "X2"), with = FALSE]
+
+# Print dimensions of X and Y
+print("The dimension of X is:")
+print(dim(X))
+
+print("The dimension of Y is:")
+print(dim(Y))
+```
+
+## 2. Data Splitting
+
+Now, we define the parameters for splitting the dataset into training, calibration, and test sets.
+
+```{r}
+# Define split parameters
+n_train <- 10000
+n_test <- 1000
+n_calib <- 2000
+
+# Perform data split
+splits <- train_test_calib_split(X, Y, n_train = n_train, n_test = n_test, n_calib = n_calib)
+
+# Extract split datasets
+X_train <- splits$X_train
+y_train <- splits$y_train
+X_calib <- splits$X_calib
+y_calib <- splits$y_calib
+X_test <- splits$X_test
+y_test <- splits$y_test
+idx_calib <- splits$idx_calib
+idx_test <- splits$idx_test
+```
+
+## 3. Model Building and Training
+
+In this step, we create and train a model using xgboost.
+
+```{r}
+# Building our model
+model <- MLModel$new(X_train, y_train, method = "gradient_boosting")
+model$fit()
+```
+
+```{r}
+# Ensure the "Saved_Models" directory exists
+dir.create("Saved_Models", showWarnings = FALSE, recursive = TRUE)
+
+# Save the model
+saveRDS(model, file = "Saved_Models/MLModel_trained.rds")
+```
+
+## 4. Uncertainty Quantification
+
+Now, we load the trained model and initialize the ModelUncertainties class to compute the uncertainty quantification using Beta quantiles.
+
+```{r}
+# Loading our pretrained model
+loaded_model <- readRDS("Saved_Models/MLModel_trained.rds")
+```
+
+
+```{r}
+# Initialize the ModelUncertainties class
+uncertainty_model <- ModelUncertainties$new(
+  model = loaded_model,
+  X_calibration = X_calib,
+  Y_calibration = y_calib,
+  uncertainty_method = "Beta_opt",
+  Global_alpha = 0.9
+)
+
+# Fit the uncertainty method on the model (compute the Beta quantiles)
+uncertainty_model$fit()
+```
+
+```{r}
+# Get the prediction bounds
+pred_bounds_test <- uncertainty_model$predict(X_test)
+
+y_test_lower <- pred_bounds_test$y_lower
+y_test_upper <- pred_bounds_test$y_upper
+
+# Compute the empirical coverage obtained from the test data
+Empirical_simultaneous_coverage <- simultaneous_coverage(y_test, y_test_lower, y_test_upper)
+```
+
+## 5. Plot Visualization
+
+Finally, we visualize the predicted curve, true values, and the upper and lower bounds for a particular test sample.
+
+```{r}
+# making prediction on the test set
+y_pred_test <- loaded_model$predict(X_test)
+
+# Define the x-axis values (24 points evenly spaced between 0 and 10)
+x_values <- seq(0, 10, length.out = 24)
+
+# Extract the relevant row (10th sample)
+y_values_pred <- y_pred_test[10, ]  # Predicted curve (red)
+y_values_true <- y_test[10, ]       # True curve (black)
+y_up <- y_test_upper[10, ]     # Upper bound (green dashed)
+y_low <- y_test_lower[10, ]     # Lower bound (green dashed)
+
+# Plot predicted curve in red
+plot(x_values, y_values_pred, type = "l", col = "red", lwd = 2,
+     xlab = "X", ylab = "Value", main = "Prediction vs True Curve with Bounds")
+
+# Add true curve in black
+lines(x_values, y_values_true, col = "black", lwd = 2)
+
+# Add upper and lower bounds in green (dashed)
+lines(x_values, y_up, col = "green", lwd = 2, lty = 2)  # Dashed line
+lines(x_values, y_low, col = "green", lwd = 2, lty = 2)  # Dashed line
+
+# Add legend
+legend("topright", legend = c("Predicted", "True", "Bounds"),
+       col = c("red", "black", "green"), lwd = 2, lty = c(1, 1, 2))
+```
+
+
+
+
+
+
+
