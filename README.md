@@ -88,7 +88,7 @@ install.packages(c("data.table", "xgboost", "caret", "R6", "Rcpp", "RcppArmadill
 ```r
 install.packages("devtools")
 library(devtools)
-install_github("your_username/Algorithmique")
+devtools::install_github("fatima-zahra-hannou/Uncertainty_Quantification_in_MultiOutput_Regression")
 ```
 
 ### Setting Up a C++ Compiler (Windows Users)
