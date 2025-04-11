@@ -133,8 +133,8 @@ uncertainty_model$fit()
 ### Beta-Optim
 Binary search over $\beta$ to find the smallest value such that the simultaneous coverage is at least $1 - \alpha$.
   - This method searches for the smallest width of prediction intervals that ensures a target **simultaneous coverage**.
-  - It uses **dichotomic optimization** on a parameter \( \beta \), which controls the tolerance of the intervals.
-  - For each candidate \( \beta \), quantiles \( q_j(1-\beta) \) are computed per dimension, and coverage is evaluated.
+  - It uses **dichotomic optimization** on a parameter **β**, which controls the tolerance of the intervals.
+  - For each candidate **β**, quantiles **q<sub>j</sub>(1 − β)** are computed per dimension, and coverage is evaluated.
     ![Demo](READMEfiles/betaoptim_mechanism.gif)
 
 $p$-dimensional quantiles for each $\beta$.
