@@ -49,7 +49,7 @@ This means that the true target will lie inside the predicted interval at least 
 To better understand the conformal prediction procedure, here's the complete pipeline:
 
 <p align="center">
-  <img src="conformal_prediction.png" width="750" />
+  <img src="READMEfiles/conformal_prediction.png" width="750" />
 </p>
 
 ### Coverage Guarantee
