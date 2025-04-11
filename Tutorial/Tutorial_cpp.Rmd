@@ -1,0 +1,360 @@
+---
+title: "Tuto - Beta-Optim"
+author: "Jaad Belhouari - Fatima-Zahra Hannou - Aymane Mimoun"
+date: "2025-03-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Introduction
+
+In this tutorial, we will guide you through building and training a machine learning model, quantifying uncertainties, and visualizing the results using the **`Algorithmique`** library in R.
+
+We will use the **`xgboost`** model for training, along with methods for uncertainty quantification and coverage estimation. The example follows these steps:
+
+1.  Data Loading
+2.  Data Splitting
+3.  Model Building and Training
+4.  Uncertainty Quantification
+5.  Visualization of Results
+
+## 1. Data Loading
+
+First, we load the dataset and separate the features and labels.
+
+```{r message=FALSE, warning=FALSE}
+# Load necessary libraries
+library(Algorithmique)
+library(xgboost)
+library(data.table)
+library(R6)
+library(ggplot2)
+library(Rcpp)
+library(dplyr)
+library(progress)
+library(broom)
+```
+
+```{r warning=FALSE}
+# Load dataset
+setwd("../")
+df <- fread("data/dataset.csv")
+X <- df[, .(X1, X2)]
+Y <- df[, !c("X1", "X2"), with = FALSE]
+
+# Print dimensions of X and Y
+print("The dimension of X is:")
+print(dim(X))
+
+print("The dimension of Y is:")
+print(dim(Y))
+```
+
+## 2. Data Splitting
+
+Now, we define the parameters for splitting the dataset into training, calibration, and test sets.
+
+```{r}
+# Define split parameters
+n_train <- 10000
+n_test <- 1000
+n_calib <- 2000
+
+# Perform data split
+splits <- train_test_calib_split(X, Y, n_train = n_train, n_test = n_test, n_calib = n_calib)
+
+# Extract split datasets
+X_train <- splits$X_train
+y_train <- splits$y_train
+X_calib <- splits$X_calib
+y_calib <- splits$y_calib
+X_test <- splits$X_test
+y_test <- splits$y_test
+idx_calib <- splits$idx_calib
+idx_test <- splits$idx_test
+```
+
+## 3. Model Building and Training
+
+In this step, we create and train a model using xgboost.
+
+```{r}
+# Building our model
+#model <- MLModel$new(X_train, y_train, method = "gradient_boosting")
+#model$fit()
+```
+
+```{r}
+# Ensure the "Saved_Models" directory exists
+#dir.create("Saved_Models", showWarnings = FALSE, recursive = TRUE)
+
+# Save the model
+#saveRDS(model, file = "Saved_Models/MLModel_trained.rds")
+```
+
+## 4. Uncertainty Quantification
+
+```{r}
+loaded_model <- readRDS("Saved_Models/MLModel_trained.rds")
+```
+
+```{r}
+y_pred_calib <- loaded_model$predict(X_calib)
+y_pred_test <- loaded_model$predict(X_test)
+```
+
+We proceed with the Beta-Optim uncertainty method.
+```{r}
+y_test = as.matrix(y_test)
+y_pred_calib <- as.matrix(y_pred_calib) 
+Y_calibration <- as.matrix(y_calib)
+Global_alpha = 0.1
+result <- fit_cpp(y_pred_calib = y_pred_calib, 
+                  Y_calibration = Y_calibration, 
+                  uncertainty_method = "Beta_Optim", 
+                  Global_alpha = Global_alpha)
+```
+
+### 4.1. Comparison with Bonferroni
+We compare the result of the Beta-Optim method with the Bonferroni correction.
+```{r}
+# Bonferroni correction for comparison
+print(paste("Beta_optim:", result$Beta_optim))
+beta_bonferroni <- Global_alpha / ncol(y_test)
+print(paste("Beta_bonferroni:", beta_bonferroni))
+
+is_beta_optim_bigger <- beta_bonferroni < result$Beta_optim
+print("Beta Optim is bigger than Bonferroni one?")
+print(is_beta_optim_bigger)  # Displays TRUE or FALSE
+
+```
+### 4.2. Predictions and Coverage
+We use the predictions to calculate the empirical coverage.
+```{r}
+quantiles = result$quantiles
+predictions = predict_cpp(y_pred_test = y_pred_test,
+                          quantiles = quantiles)
+
+y_lower_beta_optim = predictions$y_lower
+y_upper_beta_optim = predictions$y_upper
+```
+
+
+# 5. Plot visualization 
+
+```{r}
+# Select a random sample index for visualization
+index <- 7  # Random index
+y_true_sample <- y_test[index, ]
+y_pred_sample <- y_pred_test[index, ]
+y_lower_sample <- y_lower_beta_optim[index, ]
+y_upper_sample <- y_upper_beta_optim[index, ]
+
+df_plot <- data.frame(
+  X = 1:length(y_true_sample),
+  y_true = y_true_sample,
+  y_pred = y_pred_sample,
+  y_lower = y_lower_sample,
+  y_upper = y_upper_sample
+)
+
+# Visualization using ggplot2
+ggplot(df_plot, aes(x = X)) +
+  geom_line(aes(y = y_true, color = "True Values"), linewidth = 1) +  # True Values
+  geom_line(aes(y = y_pred, color = "Predicted Values"), linetype = "dashed", linewidth = 1) +  # Predicted Values
+  geom_line(aes(y = y_lower, color = "Lower Bound"), linetype = "dashed", linewidth = 1) +  # Lower Bound
+  geom_line(aes(y = y_upper, color = "Upper Bound"), linetype = "dashed", linewidth = 1) +  # Upper Bound
+  labs(
+    title = "Predicted Curve and True Values with Uncertainty Bounds",
+    x = "Sample Index",
+    y = "Values",
+    color = "Legend"
+  ) +
+  scale_color_manual(values = c("True Values" = "orange", "Predicted Values" = "darkgreen", "Lower Bound" = "lightblue", "Upper Bound" = "blue")) +
+  theme_minimal()
+
+
+```
+
+## 6. Other uncertainty methods'
+
+### 6.1. Max Rank Method
+
+```{r}
+# Apply Max Rank uncertainty method
+Max_Rank = "Max_Rank"
+max_rank_fit = fit_cpp(y_pred_calib = y_pred_calib, 
+                  Y_calibration = Y_calibration, 
+                  uncertainty_method = Max_Rank, 
+                  Global_alpha = Global_alpha)
+```
+
+```{r}
+quantiles_max_rank = max_rank_fit$quantiles
+predictions_max_rank = predict_cpp(y_pred_test = y_pred_test,
+                          quantiles = quantiles_max_rank)
+
+y_lower_max_rank = predictions_max_rank$y_lower
+y_upper_max_rank = predictions_max_rank$y_upper
+```
+
+```{r}
+# Calculate coverage for Max Rank method
+coverage_max_rank = simultaneous_coverage_cpp(y_test, y_lower_max_rank, y_upper_max_rank)
+cat(sprintf("Empirical coverage: %.2f%%\n", 100 * coverage_max_rank))
+```
+
+### 6.2. Fast Optim Method
+
+```{r}
+# Apply Fast Optim uncertainty method
+Fast_Optim = "Fast_Optim"
+fast_optim_fit = fit_cpp(y_pred_calib = y_pred_calib, 
+                  Y_calibration = Y_calibration, 
+                  uncertainty_method = Fast_Optim, 
+                  Global_alpha = Global_alpha)
+```
+
+## 7. Complexity Analysis
+### 7.1. Running and Measuring Execution Time
+```{r}
+library(progress)
+
+measure_fit_time_with_total_progress <- function(n_cal_values, methods, X, Y, model, alpha, n_rep = 1) {
+  times <- numeric(n_rep * length(n_cal_values) * length(methods))
+  
+  # Créer une barre de progression totale qui suit l'avancement global
+  pb_total <- progress_bar$new(
+    format = "  Total Progress [:bar] :percent Elapsed: :elapsedfull",
+    total = length(n_cal_values) * length(methods) * n_rep, clear = TRUE, width = 60
+  )
+  
+  # Initialisation d'un index pour stocker les résultats
+  index <- 1
+  
+  # Boucle sur toutes les tailles de calibration (n_cal_values)
+  for (nc in n_cal_values) {
+    # Boucle sur toutes les méthodes (Beta_Optim, Max_Rank, etc.)
+    for (meth in methods) {
+      # Répéter l'expérience pour chaque méthode et taille de calibration
+      for (i in 1:n_rep) {
+        n_train <- 10000
+        n_test <- 1000
+        splits <- train_test_calib_split(X, Y, n_train = n_train, n_test = n_test, n_calib = nc)
+        
+        X_calib <- splits$X_calib
+        y_calib <- splits$y_calib
+        
+        y_pred_calib <- model$predict(X_calib)
+        
+        # Timer
+        start_time <- Sys.time()
+        
+        # Appel de la fonction C++ (Rcpp) pour ajuster le modèle
+        fit_cpp(y_pred_calib = as.matrix(y_pred_calib),
+                Y_calibration = as.matrix(y_calib),
+                uncertainty_method = meth,
+                Global_alpha = alpha)
+        
+        end_time <- Sys.time()
+        
+        times[index] <- as.numeric(difftime(end_time, start_time, units = "secs"))
+        index <- index + 1
+        
+        # Mise à jour de la barre de progression totale après chaque répétition
+        pb_total$tick()
+        flush.console()  # Assurez-vous que la barre de progression s'affiche correctement
+      }
+    }
+  }
+  
+  # Calculer les statistiques pour chaque combinaison de n_cal et méthode
+  results <- data.frame(
+    method = rep(methods, each = length(n_cal_values) * n_rep),
+    n_cal = rep(rep(n_cal_values, each = n_rep), length(methods)),
+    mean_time = rep(NA, length(times)),
+    sd_time = rep(NA, length(times)),
+    all_times = times
+  )
+  
+  # Calcul des statistiques par méthode et taille de calibration
+  for (i in 1:nrow(results)) {
+    method_subset <- results[results$method == results$method[i] & results$n_cal == results$n_cal[i], ]
+    results$mean_time[i] <- mean(method_subset$all_times)
+    results$sd_time[i] <- sd(method_subset$all_times)
+  }
+  
+  return(results)
+}
+
+```
+
+
+## 7.2 Visualization of Execution Time for Different n_cal Values
+```{r message=FALSE}
+methods <- c("Beta_Optim", "Max_Rank", "Fast_Optim")  # Vérifiez que 'methods' est bien défini ici
+n_cal_values <- seq(5*10^3, 5*10^4, by = 5*10^3)  # Ajustez l'intervalle selon vos besoins
+
+# Initialiser une liste pour stocker les résultats
+results_list <- list()
+
+# Exécuter la fonction pour chaque valeur de n_cal et stocker les résultats
+for (n_cal in n_cal_values) {
+  results <- measure_fit_time_with_total_progress(n_cal, methods, X, Y, loaded_model, Global_alpha, n_rep = 3)
+  results$n_cal <- n_cal  # Ajouter la valeur de n_cal comme une colonne
+  results_list[[as.character(n_cal)]] <- results  # Stocker les résultats dans la liste
+}
+
+
+```
+```{r}
+# Combine all results
+results_all <- do.call(rbind, results_list)
+# Plot the results
+ggplot(results_all, aes(x = n_cal, y = mean_time, color = method)) +
+  geom_line() +
+  geom_point() +
+  scale_x_log10() +  # Logarithmique pour la taille de calibration
+  labs(x = "Taille de calibration (log)", y = "Temps moyen", title = "Temps moyen par méthode et taille de calibration") +
+  theme_minimal()
+
+#ggsave("mean_execution_time_with_errorbars_cpp.png", plot = plot, width = 8, height = 6, dpi = 300)
+```
+
+## Zoom on Max_Rank and Fast_Optim
+```{r}
+# Filtrer les résultats pour ne conserver que les méthodes "Max_rank" et "max_rank_beta_optim"
+results_filtered <- results_all[results_all$method %in% c("Max_Rank", "Max_Rank_Beta_Optim"), ]
+
+# Créer le graphique en utilisant ggplot
+ggplot(results_filtered, aes(x = n_cal, y = mean_time, color = method)) +
+  geom_line() +
+  geom_point() +
+  scale_x_log10() +  # Logarithmique pour la taille de calibration
+  labs(x = "Taille de calibration (log)", y = "Temps moyen", 
+       title = "Comparaison des temps moyens entre Max_rank et max_rank_beta_optim") +
+  theme_minimal()
+
+# Enregistrer le graphique avec ggsave
+#ggsave("loglogplot_cpp.png", plot = plot, width = 8, height = 6, dpi = 300)
+
+```
+
+
+### 7.3 Estimation of Complexity Exponent (k) Using Log-Log Regression
+```{r}
+# Appliquer la régression linéaire pour estimer l'exposant k
+exponent_estimates <- results_all %>%
+  group_by(method) %>%  # Grouper par méthode
+  do(tidy(lm(log(mean_time) ~ log(n_cal), data = .))) %>%  # Régression log-log
+  filter(term == "log(n_cal)") %>%  # Sélectionner l'estimation pour log(n_cal)
+  select(method, estimate) %>%  # Garder la méthode et l'estimation de l'exposant
+  rename(exponent_k = estimate)  # Renommer l'estimation en exponent_k
+
+# Afficher les résultats
+print(exponent_estimates)
+```
+## 8. Conclusion 
+
+This analysis demonstrates the effectiveness of using Rcpp to accelerate computations in R. By integrating C++ functions into R code, we significantly reduced execution times, especially for large datasets. Rcpp optimizes critical parts of the computation while leveraging the flexibility of R. This approach is particularly beneficial for large-scale simulations where performance is key.

@@ -2,25 +2,49 @@
 % Please edit documentation in R/model_training_GB.R
 \name{MLModel}
 \alias{MLModel}
-\title{MLModel}
-\format{
-An \code{R6Class} object with the following public methods:
-\describe{
-\item{\code{new(X, Y, method = "polynomial", degree = 2, ...)}}{Constructor for the model. Initializes data and method.}
-\item{\code{fit()}}{Trains one model per output dimension in \code{Y}.}
-\item{\code{predict(X_new)}}{Predicts all output values from new input data \code{X_new}.}
-}
-}
+\title{MLModel Class}
 \description{
 R6 class for multi-output regression using either polynomial regression or gradient boosting with bagging (via xgboost).
 }
+\section{Methods}{
+
+\describe{
+\item{\code{initialize(X, Y, method = "polynomial", degree = 2, n_estimators = 10, nrounds = 100, subsample_rate = 0.8)}}{Constructor. Initializes training data, method, and model hyperparameters.}
+\item{\code{fit()}}{Trains one model per output dimension in \code{Y} using the specified method.}
+\item{\code{predict(X_new)}}{Returns predictions from trained models given new input data.}
+}
+}
+
 \examples{
+X_train <- matrix(rnorm(100), nrow = 10, ncol = 10)  # 10 samples, 10 features
+Y_train <- matrix(rnorm(30), nrow = 10, ncol = 3)  # 10 samples, 10 features, 3 output dimensions
 X <- X_train
 Y <- Y_train
-model <- MLModel$new(X, Y, method = "polynomial")
+model <- MLModel$new(X, Y, method = "gradient_boosting")
 model$fit()
 Y_pred <- model$predict(X)
 
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{X}}{A data frame or matrix of input features used for training. Must be of size (n_samples, n_features).}
+
+\item{\code{Y}}{A matrix or data frame of target values for training. Each column corresponds to an output dimension.}
+
+\item{\code{method}}{A string indicating the regression method: "polynomial" or "gradient_boosting".}
+
+\item{\code{degree}}{Degree of the polynomial used when method = "polynomial". Default is 2.}
+
+\item{\code{n_estimators}}{Number of estimators (models) used in gradient boosting. Default is 10.}
+
+\item{\code{nrounds}}{Number of boosting rounds for each xgboost model. Default is 100.}
+
+\item{\code{subsample_rate}}{Proportion of training data to subsample for bagging in gradient boosting. Default is 0.8.}
+
+\item{\code{models}}{A list to store trained models for each output dimension.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -35,6 +59,7 @@ Y_pred <- model$predict(X)
 \if{html}{\out{<a id="method-MLModel-new"></a>}}
 \if{latex}{\out{\hypertarget{method-MLModel-new}{}}}
 \subsection{Method \code{new()}}{
+Initializes the model with input features, target values, and hyperparameters.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{MLModel$new(
   X,
@@ -47,11 +72,31 @@ Y_pred <- model$predict(X)
 )}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{X}}{A data frame or matrix of features.}
+
+\item{\code{Y}}{A matrix or data frame of target values.}
+
+\item{\code{method}}{Regression method to use: "polynomial" or "gradient_boosting".}
+
+\item{\code{degree}}{Degree of the polynomial (if applicable).}
+
+\item{\code{n_estimators}}{Number of bagging estimators.}
+
+\item{\code{nrounds}}{Number of boosting rounds.}
+
+\item{\code{subsample_rate}}{Sampling rate for bootstrapping in gradient boosting.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-MLModel-fit"></a>}}
 \if{latex}{\out{\hypertarget{method-MLModel-fit}{}}}
 \subsection{Method \code{fit()}}{
+Fit the model. Trains one model per output dimension in Y.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{MLModel$fit()}\if{html}{\out{</div>}}
 }
@@ -61,10 +106,22 @@ Y_pred <- model$predict(X)
 \if{html}{\out{<a id="method-MLModel-predict"></a>}}
 \if{latex}{\out{\hypertarget{method-MLModel-predict}{}}}
 \subsection{Method \code{predict()}}{
+Predict the target values for new input data.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{MLModel$predict(X_new)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{X_new}}{A matrix or data frame of new input features for prediction.
+The number of rows should match the number of samples in the model's training data.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A matrix of predicted values. Each column corresponds to an output dimension.
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-MLModel-clone"></a>}}

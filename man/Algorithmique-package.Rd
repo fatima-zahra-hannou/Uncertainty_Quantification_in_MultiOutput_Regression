@@ -6,7 +6,7 @@
 \alias{Algorithmique-package}
 \title{Algorithmique: Conformal Prediction in High Dimensions}
 \description{
-To add.
+Implements conformal prediction techniques in high-dimensional settings, including model training, uncertainty quantification, and visual diagnostics using gradient boosting methods.
 }
 \author{
 \strong{Maintainer}: Fatima Zahra HANNOU \email{fatimzahrahannou@gmail.com}

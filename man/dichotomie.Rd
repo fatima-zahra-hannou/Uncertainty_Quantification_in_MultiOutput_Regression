@@ -30,8 +30,15 @@ number of iterations to find the Beta that best satisfies the target coverage.
 }
 \examples{
 # Example usage:
-target_coverage <- 0.95
-Beta_optimal <- dichotomie(target = target_coverage, xmin = 0, xmax = 1, n_iter = 10, Eval_simultaneous_coverage_beta)
+target_coverage <- 0.90
+
+# Simulated Eval_simultaneous_coverage_beta function (for the example only)
+Eval_simultaneous_coverage_beta <- function(Beta) {
+  return(0.9)  # Simulated coverage, replace with actual logic
+}
+
+# Running dichotomy to find the optimal Beta
+Beta_optimal <- dichotomie(target = target_coverage, xmin = 0, xmax = 1, n_iter = 10, Eval_simultaneous_coverage_beta = Eval_simultaneous_coverage_beta)
 print(Beta_optimal)
 
 }
