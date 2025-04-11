@@ -181,6 +181,8 @@ dimension.
 This work was developed as part of the **Algorithmique Project** at Université Paris-Saclay (M2 Data Science), under the supervision of Prof. Vincent Runge.
 
 Refer to `Report_Project.pdf` for details.
+[Refer to the project report](READMEfiles/Report_Project.pdf) for details.
+
 
 ---
 
