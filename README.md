@@ -61,9 +61,6 @@ Then conformal prediction guarantees:
   <img src="READMEfiles/Coverage_Guarantee.png" width="750" />
 </p>
 
-```text
-1 − α ≤ P(Y_test ∈ C(X_test)) ≤ 1 − α + 1 / (n + 1)
-```
 This means we have a probabilistic bound on coverage even with finite calibration size.
 
 ---
