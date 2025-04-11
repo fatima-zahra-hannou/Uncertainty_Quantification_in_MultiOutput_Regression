@@ -178,7 +178,7 @@ dimension.
 
 ## Project Context
 
-This work was developed as part of the **Algorithmique Project** at Université Paris-Saclay (M2 Data Science), under the supervision of Prof. Stéphanie Allassonnière.
+This work was developed as part of the **Algorithmique Project** at Université Paris-Saclay (M2 Data Science), under the supervision of Prof. Vincent Runge.
 
 Refer to `Report_Project.pdf` for details.
 
